@@ -1,0 +1,11 @@
+# A ConfigMap allows you to set configuration data separately from application code, e.g. database url
+# They can be referenced by different Deployments
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-config
+data:
+  # This will be the Service name of MongoDB
+  # Which will be the endpoint of MongoDB
+  mongo-url: mongo-service

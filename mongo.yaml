@@ -1,0 +1,69 @@
+# Configuration file to create a deployment and service for MongoDB
+# Common practice to group deployment and service in single file
+
+apiVersion: apps/v1
+kind: Deployment
+
+# metadata section
+metadata:
+  name: mongo-deployment
+  labels:
+    app: mongo
+    
+# Deployment specific specification
+spec:
+  replicas: 1
+  selector:
+    # to identify which pods belong to this deployment
+    matchLabels:
+      app: mongo
+
+  # configuration for Pod within deployment
+  template:
+    metadata:
+      # each pod has unique name, but same label (required field here)
+      labels:
+        app: mongo
+    spec:
+      containers:
+      # create pods with "mongo:5.0" image
+      - name: mongodb
+        image: mongo:5.0
+        ports:
+        - containerPort: 27017
+        env:
+        # MongoDB application expects "MONGO_INITDB_ROOT_USERNAME"
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              # "mongo-secret" is the name in the metadata of mongo-secret.yaml
+              name: mongo-secret
+              # "mongo-user" is one of the key in the data of mongo-secret.yaml
+              key: mongo-user
+        # MongoDB application expects "MONGO_INITDB_ROOT_PASSWORD"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password  
+
+---
+# "---" is basic YAML syntax to have multiple YAML configurations within 1 file
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  # select pods to forward the requests to
+  # must match the label of the pods
+  selector:
+    app: mongo
+  ports:
+    - protocol: TCP
+      # sets the port of the service
+      # same as target port to keep it simple
+      port: 27017
+      # which Port to forward the request to the pods
+      # should always be the same as the containerPort of deployment
+      targetPort: 27017

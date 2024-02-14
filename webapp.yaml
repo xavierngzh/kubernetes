@@ -1,0 +1,61 @@
+# Configuration file to create a deployment and service for web application
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        image: nanajanashia/k8s-demo-app:v1.0
+        ports:
+        # Nodejs app that listens on port 3000
+        - containerPort: 3000
+        env:
+        - name: USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: USER_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password 
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              # "mongo-config" is the name in the metadata of mongo-config.yaml
+              name: mongo-config
+              # "mongo-url" is one of the keys in the data of mongo-config.yaml
+              key: mongo-url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+spec:
+  # Default type is ClusterIP (an internal Service)
+  # NodePort is external service
+  type: NodePort
+  selector:
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      # exposes the Service on each Node's IP at a static port
+      # allows us to access this Service, which will then access the pods
+      # must be between 30000 - 32767
+      nodePort: 30100
